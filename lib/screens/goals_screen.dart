@@ -559,18 +559,192 @@ class GoalsScreenState extends State<GoalsScreen> {
   }
 
   void _showAddGoalDialog() {
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    int targetCount = 1;
+    String selectedCategory = 'health';
+    DateTime startDate = DateTime.now();
+    DateTime endDate = DateTime.now().add(const Duration(days: 30));
+
+    final categories = [
+      'health',
+      'fitness',
+      'social',
+      'learning',
+      'daily',
+      'personal',
+    ];
+
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Add New Goal'),
-            content: const Text('Goal creation feature coming soon!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: const Text('Add New Goal'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Goal Title',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.emoji_events),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.description),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                keyboardType: TextInputType.number,
+                                decoration: const InputDecoration(
+                                  labelText: 'Target Count',
+                                  border: OutlineInputBorder(),
+                                  prefixIcon: Icon(Icons.track_changes),
+                                ),
+                                onChanged: (value) {
+                                  targetCount = int.tryParse(value) ?? 1;
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedCategory,
+                          decoration: const InputDecoration(
+                            labelText: 'Category',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.category),
+                          ),
+                          items:
+                              categories.map((category) {
+                                return DropdownMenuItem(
+                                  value: category,
+                                  child: Text(category.toUpperCase()),
+                                );
+                              }).toList(),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedCategory = value!;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                title: Text(
+                                  '${startDate.day}/${startDate.month}/${startDate.year}',
+                                ),
+                                subtitle: const Text('Start Date'),
+                                leading: const Icon(Icons.calendar_today),
+                                onTap: () async {
+                                  final date = await showDatePicker(
+                                    context: context,
+                                    initialDate: startDate,
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
+                                  );
+                                  if (date != null) {
+                                    setDialogState(() {
+                                      startDate = date;
+                                      if (endDate.isBefore(date)) {
+                                        endDate = date.add(
+                                          const Duration(days: 30),
+                                        );
+                                      }
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                title: Text(
+                                  '${endDate.day}/${endDate.month}/${endDate.year}',
+                                ),
+                                subtitle: const Text('End Date'),
+                                leading: const Icon(Icons.event),
+                                onTap: () async {
+                                  final date = await showDatePicker(
+                                    context: context,
+                                    initialDate: endDate,
+                                    firstDate: startDate,
+                                    lastDate: DateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
+                                  );
+                                  if (date != null) {
+                                    setDialogState(() {
+                                      endDate = date;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (titleController.text.isNotEmpty) {
+                          final newGoal = Goal(
+                            id:
+                                DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                            title: titleController.text,
+                            description: descriptionController.text,
+                            targetCount: targetCount,
+                            currentCount: 0,
+                            category: selectedCategory,
+                            startDate: startDate,
+                            endDate: endDate,
+                            isActive: true,
+                          );
+                          setState(() {
+                            _goals.add(newGoal);
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Goal added successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Add Goal'),
+                    ),
+                  ],
+                ),
           ),
     );
   }

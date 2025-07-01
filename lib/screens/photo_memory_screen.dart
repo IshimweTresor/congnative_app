@@ -388,22 +388,259 @@ class PhotoMemoryScreenState extends State<PhotoMemoryScreen> {
   }
 
   void _addMemory() {
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text(
-          'Photo memory feature coming soon! You can record memories by writing notes about your day.',
-        ),
-        duration: Duration(seconds: 3),
-      ),
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final notesController = TextEditingController();
+    final peopleController = TextEditingController();
+    DateTime selectedDate = DateTime.now();
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: const Text('Add Memory'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.description),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Notes',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.note),
+                            hintText: 'What happened? How did you feel?',
+                          ),
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: peopleController,
+                          decoration: const InputDecoration(
+                            labelText: 'People (comma separated)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.people),
+                            hintText: 'John, Mary, Dr. Smith',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ListTile(
+                          title: Text(
+                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                          ),
+                          subtitle: const Text('Date'),
+                          leading: const Icon(Icons.calendar_today),
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now().subtract(
+                                const Duration(days: 365),
+                              ),
+                              lastDate: DateTime.now(),
+                            );
+                            if (date != null) {
+                              setDialogState(() {
+                                selectedDate = date;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (titleController.text.isNotEmpty) {
+                          final newMemory = {
+                            'id':
+                                DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                            'title': titleController.text,
+                            'description': descriptionController.text,
+                            'date': selectedDate,
+                            'notes': notesController.text,
+                            'people':
+                                peopleController.text
+                                    .split(',')
+                                    .map((e) => e.trim())
+                                    .where((e) => e.isNotEmpty)
+                                    .toList(),
+                            'category': _selectedCategory,
+                          };
+                          setState(() {
+                            _memories.add(newMemory);
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Memory added successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
+          ),
     );
   }
 
   void _editMemory(Map<String, dynamic> memory) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Edit memory: ${memory['title']}'),
-        duration: const Duration(seconds: 2),
-      ),
+    final titleController = TextEditingController(text: memory['title']);
+    final descriptionController = TextEditingController(
+      text: memory['description'],
+    );
+    final notesController = TextEditingController(text: memory['notes']);
+    final peopleController = TextEditingController(
+      text: (memory['people'] as List).join(', '),
+    );
+    DateTime selectedDate = memory['date'];
+
+    showDialog(
+      context: context,
+      builder:
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: const Text('Edit Memory'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.description),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: notesController,
+                          decoration: const InputDecoration(
+                            labelText: 'Notes',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.note),
+                          ),
+                          maxLines: 3,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: peopleController,
+                          decoration: const InputDecoration(
+                            labelText: 'People (comma separated)',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.people),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        ListTile(
+                          title: Text(
+                            '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                          ),
+                          subtitle: const Text('Date'),
+                          leading: const Icon(Icons.calendar_today),
+                          onTap: () async {
+                            final date = await showDatePicker(
+                              context: context,
+                              initialDate: selectedDate,
+                              firstDate: DateTime.now().subtract(
+                                const Duration(days: 365),
+                              ),
+                              lastDate: DateTime.now(),
+                            );
+                            if (date != null) {
+                              setDialogState(() {
+                                selectedDate = date;
+                              });
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (titleController.text.isNotEmpty) {
+                          setState(() {
+                            final index = _memories.indexWhere(
+                              (m) => m['id'] == memory['id'],
+                            );
+                            if (index != -1) {
+                              _memories[index] = {
+                                ...memory,
+                                'title': titleController.text,
+                                'description': descriptionController.text,
+                                'notes': notesController.text,
+                                'people':
+                                    peopleController.text
+                                        .split(',')
+                                        .map((e) => e.trim())
+                                        .where((e) => e.isNotEmpty)
+                                        .toList(),
+                                'date': selectedDate,
+                              };
+                            }
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Memory updated successfully!'),
+                              backgroundColor: Colors.blue,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Update'),
+                    ),
+                  ],
+                ),
+          ),
     );
   }
 }

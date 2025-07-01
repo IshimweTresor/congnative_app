@@ -426,37 +426,448 @@ class CalendarScreenState extends State<CalendarScreen> {
   }
 
   void _showAddAppointmentDialog() {
-    // Implementation for adding appointments
+    final titleController = TextEditingController();
+    final descriptionController = TextEditingController();
+    final locationController = TextEditingController();
+    DateTime selectedDate = _selectedDate;
+    TimeOfDay selectedTime = TimeOfDay.now();
+    String selectedType = 'medical';
+    Duration reminderBefore = const Duration(hours: 1);
+
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Add Appointment'),
-            content: const Text('Feature coming soon!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: const Text('Add Appointment'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.description),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: locationController,
+                          decoration: const InputDecoration(
+                            labelText: 'Location',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                title: Text(
+                                  '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                                ),
+                                subtitle: const Text('Date'),
+                                leading: const Icon(Icons.calendar_today),
+                                onTap: () async {
+                                  final date = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate,
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
+                                  );
+                                  if (date != null) {
+                                    setDialogState(() {
+                                      selectedDate = date;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                title: Text(
+                                  '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                                ),
+                                subtitle: const Text('Time'),
+                                leading: const Icon(Icons.access_time),
+                                onTap: () async {
+                                  final time = await showTimePicker(
+                                    context: context,
+                                    initialTime: selectedTime,
+                                  );
+                                  if (time != null) {
+                                    setDialogState(() {
+                                      selectedTime = time;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedType,
+                          decoration: const InputDecoration(
+                            labelText: 'Type',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.category),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'medical',
+                              child: Text('Medical'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'therapy',
+                              child: Text('Therapy'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'social',
+                              child: Text('Social'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'other',
+                              child: Text('Other'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedType = value!;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<Duration>(
+                          value: reminderBefore,
+                          decoration: const InputDecoration(
+                            labelText: 'Reminder',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.notification_important),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: Duration(minutes: 15),
+                              child: Text('15 minutes before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(minutes: 30),
+                              child: Text('30 minutes before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(hours: 1),
+                              child: Text('1 hour before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(hours: 2),
+                              child: Text('2 hours before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(days: 1),
+                              child: Text('1 day before'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() {
+                              reminderBefore = value!;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (titleController.text.isNotEmpty) {
+                          final newAppointment = Appointment(
+                            id:
+                                DateTime.now().millisecondsSinceEpoch
+                                    .toString(),
+                            title: titleController.text,
+                            description: descriptionController.text,
+                            dateTime: DateTime(
+                              selectedDate.year,
+                              selectedDate.month,
+                              selectedDate.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            ),
+                            location: locationController.text,
+                            type: selectedType,
+                            reminderBefore: reminderBefore,
+                          );
+                          setState(() {
+                            _appointments.add(newAppointment);
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Appointment added successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
           ),
     );
   }
 
   void _showEditAppointmentDialog(Appointment appointment) {
-    // Implementation for editing appointments
+    final titleController = TextEditingController(text: appointment.title);
+    final descriptionController = TextEditingController(
+      text: appointment.description,
+    );
+    final locationController = TextEditingController(
+      text: appointment.location,
+    );
+    DateTime selectedDate = DateTime(
+      appointment.dateTime.year,
+      appointment.dateTime.month,
+      appointment.dateTime.day,
+    );
+    TimeOfDay selectedTime = TimeOfDay(
+      hour: appointment.dateTime.hour,
+      minute: appointment.dateTime.minute,
+    );
+    String selectedType = appointment.type;
+    Duration reminderBefore = appointment.reminderBefore;
+
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Edit Appointment'),
-            content: const Text('Feature coming soon!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: const Text('Edit Appointment'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: titleController,
+                          decoration: const InputDecoration(
+                            labelText: 'Title',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.title),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: descriptionController,
+                          decoration: const InputDecoration(
+                            labelText: 'Description',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.description),
+                          ),
+                          maxLines: 2,
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: locationController,
+                          decoration: const InputDecoration(
+                            labelText: 'Location',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.location_on),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                title: Text(
+                                  '${selectedDate.day}/${selectedDate.month}/${selectedDate.year}',
+                                ),
+                                subtitle: const Text('Date'),
+                                leading: const Icon(Icons.calendar_today),
+                                onTap: () async {
+                                  final date = await showDatePicker(
+                                    context: context,
+                                    initialDate: selectedDate,
+                                    firstDate: DateTime.now(),
+                                    lastDate: DateTime.now().add(
+                                      const Duration(days: 365),
+                                    ),
+                                  );
+                                  if (date != null) {
+                                    setDialogState(() {
+                                      selectedDate = date;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: ListTile(
+                                title: Text(
+                                  '${selectedTime.hour.toString().padLeft(2, '0')}:${selectedTime.minute.toString().padLeft(2, '0')}',
+                                ),
+                                subtitle: const Text('Time'),
+                                leading: const Icon(Icons.access_time),
+                                onTap: () async {
+                                  final time = await showTimePicker(
+                                    context: context,
+                                    initialTime: selectedTime,
+                                  );
+                                  if (time != null) {
+                                    setDialogState(() {
+                                      selectedTime = time;
+                                    });
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          value: selectedType,
+                          decoration: const InputDecoration(
+                            labelText: 'Type',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.category),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: 'medical',
+                              child: Text('Medical'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'therapy',
+                              child: Text('Therapy'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'social',
+                              child: Text('Social'),
+                            ),
+                            DropdownMenuItem(
+                              value: 'other',
+                              child: Text('Other'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedType = value!;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<Duration>(
+                          value: reminderBefore,
+                          decoration: const InputDecoration(
+                            labelText: 'Reminder',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.notification_important),
+                          ),
+                          items: [
+                            DropdownMenuItem(
+                              value: Duration(minutes: 15),
+                              child: Text('15 minutes before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(minutes: 30),
+                              child: Text('30 minutes before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(hours: 1),
+                              child: Text('1 hour before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(hours: 2),
+                              child: Text('2 hours before'),
+                            ),
+                            DropdownMenuItem(
+                              value: Duration(days: 1),
+                              child: Text('1 day before'),
+                            ),
+                          ],
+                          onChanged: (value) {
+                            setDialogState(() {
+                              reminderBefore = value!;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (titleController.text.isNotEmpty) {
+                          final updatedAppointment = appointment.copyWith(
+                            title: titleController.text,
+                            description: descriptionController.text,
+                            dateTime: DateTime(
+                              selectedDate.year,
+                              selectedDate.month,
+                              selectedDate.day,
+                              selectedTime.hour,
+                              selectedTime.minute,
+                            ),
+                            location: locationController.text,
+                            type: selectedType,
+                            reminderBefore: reminderBefore,
+                          );
+                          setState(() {
+                            final index = _appointments.indexWhere(
+                              (apt) => apt.id == appointment.id,
+                            );
+                            if (index != -1) {
+                              _appointments[index] = updatedAppointment;
+                            }
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Appointment updated successfully!',
+                              ),
+                              backgroundColor: Colors.blue,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Update'),
+                    ),
+                  ],
+                ),
           ),
     );
   }

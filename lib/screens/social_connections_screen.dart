@@ -4,8 +4,7 @@ class SocialConnectionsScreen extends StatefulWidget {
   const SocialConnectionsScreen({super.key});
 
   @override
-  SocialConnectionsScreenState createState() =>
-      SocialConnectionsScreenState();
+  SocialConnectionsScreenState createState() => SocialConnectionsScreenState();
 }
 
 class SocialConnectionsScreenState extends State<SocialConnectionsScreen> {
@@ -209,18 +208,117 @@ class SocialConnectionsScreenState extends State<SocialConnectionsScreen> {
   }
 
   void _showAddContactDialog() {
+    final nameController = TextEditingController();
+    final phoneController = TextEditingController();
+    final relationshipController = TextEditingController();
+    int selectedGroupIndex = 0;
+
     showDialog(
       context: context,
       builder:
-          (context) => AlertDialog(
-            title: const Text('Add Contact'),
-            content: const Text('This feature is coming soon!'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('OK'),
-              ),
-            ],
+          (context) => StatefulBuilder(
+            builder:
+                (context, setDialogState) => AlertDialog(
+                  title: const Text('Add New Contact'),
+                  content: SingleChildScrollView(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextField(
+                          controller: nameController,
+                          decoration: const InputDecoration(
+                            labelText: 'Name',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.person),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: phoneController,
+                          keyboardType: TextInputType.phone,
+                          decoration: const InputDecoration(
+                            labelText: 'Phone Number',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.phone),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        TextField(
+                          controller: relationshipController,
+                          decoration: const InputDecoration(
+                            labelText: 'Relationship',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.people),
+                            hintText: 'e.g., Son, Daughter, Friend, Doctor',
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<int>(
+                          value: selectedGroupIndex,
+                          decoration: const InputDecoration(
+                            labelText: 'Group',
+                            border: OutlineInputBorder(),
+                            prefixIcon: Icon(Icons.group),
+                          ),
+                          items:
+                              _connections.asMap().entries.map((entry) {
+                                return DropdownMenuItem<int>(
+                                  value: entry.key,
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        entry.value['icon'] as IconData,
+                                        color: entry.value['color'] as Color,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(entry.value['name'] as String),
+                                    ],
+                                  ),
+                                );
+                              }).toList(),
+                          onChanged: (value) {
+                            setDialogState(() {
+                              selectedGroupIndex = value!;
+                            });
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(context).pop(),
+                      child: const Text('Cancel'),
+                    ),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (nameController.text.isNotEmpty &&
+                            phoneController.text.isNotEmpty &&
+                            relationshipController.text.isNotEmpty) {
+                          setState(() {
+                            final newContact = {
+                              'name': nameController.text,
+                              'phone': phoneController.text,
+                              'relationship': relationshipController.text,
+                            };
+                            (_connections[selectedGroupIndex]['contacts']
+                                    as List)
+                                .add(newContact);
+                          });
+                          Navigator.of(context).pop();
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Contact added successfully!'),
+                              backgroundColor: Colors.green,
+                            ),
+                          );
+                        }
+                      },
+                      child: const Text('Add'),
+                    ),
+                  ],
+                ),
           ),
     );
   }
